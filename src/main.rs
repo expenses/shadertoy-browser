@@ -110,6 +110,7 @@ fn search(client: &shadertoy::Client, matches: &clap::ArgMatches<'_>) -> Result<
         let search_result: serde_json::Result<Vec<String>> = serde_json::from_str(&json_str);
         search_result.chain_err(|| "shader query json deserialization failed")
     } else {
+        /*
         // issue the actual request
         match client
             .search(&search_params)
@@ -122,6 +123,8 @@ fn search(client: &shadertoy::Client, matches: &clap::ArgMatches<'_>) -> Result<
             }
             Err(err) => Err(err),
         }
+        */
+        panic!()
     }
 }
 
@@ -175,18 +178,17 @@ fn download(
         let process_shadertoy = |shadertoy| -> Result<()> {
             let path = PathBuf::from(format!("output/shader/{}/{}.json", shadertoy, shadertoy));
 
-            let shader;
-
-            if !path.exists() {
-                profile_scope!("shader_json_query");
+            let shader: shadertoy::Shader = if !path.exists() {
+                /*profile_scope!("shader_json_query");
                 shader = client.get_shader(shadertoy)?;
-                write_file(&path, serde_json::to_string_pretty(&shader)?.as_bytes())?;
+                write_file(&path, serde_json::to_string_pretty(&shader)?.as_bytes())?;*/
+                panic!()
             } else {
                 profile_scope!("shader_json_file_load");
                 let mut json_str = String::new();
                 File::open(&path)?.read_to_string(&mut json_str)?;
-                shader = serde_json::from_str(&json_str)?;
-            }
+                serde_json::from_str(&json_str)?
+            };
 
             info!(
                 "Found shadertoy {}: {} by {} ({} views, {} likes)",
@@ -256,9 +258,12 @@ fn download(
                     && pass.inputs.is_empty()
                     && shader.renderpass.len() == 1
                 {
-                    // these shaders get stuck in forever compilation, so let's skip them forn ow
+                    // these shaders get stuck in forever compilation, so let's skip them for now
                     // TODO should make compilation more robust and be able to timeout and then remove this
-                    let skip_shaders = ["XdsBzj", "XtlSD7", "MlB3Wt", "4ssfzj", "XllSWf", "4td3z4"];
+                    let skip_shaders = [
+                        "XdsBzj", "XtlSD7", "MlB3Wt", "4ssfzj", "XllSWf", "4td3z4",
+                        "Xs2Bzm", "MsjfRm", "wsVSWW", "tssfW2",
+                    ];
 
                     if skip_shaders.contains(&shader.info.id.as_str()) {
                         continue;
@@ -326,7 +331,7 @@ fn download(
                     let path = PathBuf::from(format!("output{}", input.src));
 
                     if !path.exists() {
-                        let mut data_response = client
+                        /*let mut data_response = client
                             .rest_client
                             .get(&format!("https://www.shadertoy.com/{}", input.src))
                             .send()?;
@@ -336,7 +341,7 @@ fn download(
 
                         info!("Asset downloaded: {}, {} bytes", input.src, data.len());
 
-                        write_file(&path, &data)?;
+                        write_file(&path, &data)?;*/
                     }
                 }
             }
@@ -514,6 +519,7 @@ fn run() -> Result<()> {
 
     // setup log
 
+    /*
     fern::Dispatch::new()
         .format(|out, message, record| {
             out.finish(format_args!(
@@ -528,39 +534,13 @@ fn run() -> Result<()> {
             std::fs::OpenOptions::new()
                 .write(true)
                 .create(true)
-                .append(false)
+                .append(true)
                 .open("output.log")?,
         )
         .apply()?;
+    */
 
     // setup renderer
-
-    let mut render_backend = Box::new(render_gfx::GfxBackend) as Box<_>;
-
-    thread_profiler::register_thread_with_profiler();
-
-    // download and process assets
-
-    let mut built_shadertoy_shaders =
-        download(&matches, &render_backend).chain_err(|| "query for shaders failed")?;
-
-    // write out profiler data for startup
-    {
-        let time = Instant::now();
-        let file_name = "profile-startup.json";
-        thread_profiler::write_profile(file_name);
-        info!(
-            "Saved profiler log to \"{}\" [{:.1} ms]",
-            file_name,
-            time.elapsed().as_fractional_millis()
-        );
-    }
-
-    if built_shadertoy_shaders.is_empty() || matches.is_present("headless") {
-        return Ok(());
-    }
-
-    // set up rendering window
 
     let event_loop = winit::event_loop::EventLoop::new();
     let window = winit::window::WindowBuilder::new()
@@ -580,8 +560,25 @@ fn run() -> Result<()> {
         .build(&event_loop)
         .chain_err(|| "error creating window")?;
 
-    render_backend.init_window(&window);
 
+    let mut render_backend = Box::new(render_gfx::GfxBackend::<gfx_backend_metal::Backend>::new(&window)) as Box<_>;
+
+    thread_profiler::register_thread_with_profiler();
+
+    // download and process assets
+
+    let mut built_shadertoy_shaders =
+        download(&matches, &render_backend).chain_err(|| "query for shaders failed")?;
+
+    render_backend.write_pipeline_cache();
+
+    if built_shadertoy_shaders.is_empty() || matches.is_present("headless") {
+        return Ok(());
+    }
+
+    Ok(())
+
+    /*
     let mut mouse_pos = (0.0f64, 0.0f64);
     let mut mouse_pressed_pos = (0.0f64, 0.0f64);
     let mut mouse_click_pos = (0.0f64, 0.0f64);
@@ -680,7 +677,7 @@ fn run() -> Result<()> {
                 event: winit::event::WindowEvent::Resized { .. },
                 ..
             } => {
-                render_backend.init_window(&window);
+                //render_backend.init_window(&window);
             }
             winit::event::Event::RedrawRequested(_) => {
                 // render frame
@@ -745,7 +742,7 @@ fn run() -> Result<()> {
             }
             _ => (),
         }
-    });
+    });*/
 }
 
 fn main() {

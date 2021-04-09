@@ -7,7 +7,7 @@
         "request": "launch",
         "name": "Launch",
         "args": [],
-        "program": "${workspaceFolder}/target/debug/shadertoy-browser",
+        "program": "${workspaceFolder}/target/release/shadertoy-browser",
         "cwd": "${workspaceFolder}",
         "stopOnEntry": false,
         "sourceLanguages": ["rust"],

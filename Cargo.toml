@@ -42,7 +42,9 @@ thread_profiler = "0.3.0"
 log = "0.4.14"
 fern = "0.6.0"
 sha3 = "0.9.1"
-gfx = "0.18.2"
+gfx-backend-metal = { path = "../gfx/src/backend/metal", features = ["cross"] }
+gfx-hal = { path = "../gfx/src/hal" }
+gfx-auxil = { path = "../gfx/src/auxil/auxil" }
 
 [profile.release]
 debug = true

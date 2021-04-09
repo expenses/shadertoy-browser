@@ -48,8 +48,9 @@ pub struct RenderParams<'a> {
 }
 
 pub trait RenderBackend: Sync {
-    fn init_window(&mut self, window: &winit::window::Window);
     fn render_frame(&mut self, params: RenderParams<'_>);
 
     fn new_pipeline(&self, shader_path: &str, shader_source: &str) -> Result<RenderPipelineHandle>;
+
+    fn write_pipeline_cache(&self);
 }
